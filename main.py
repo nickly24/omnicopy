@@ -1,3 +1,4 @@
+import os
 import random
 import threading
 import time
@@ -90,6 +91,11 @@ def _room_payload(room_id: str, room: Room) -> dict:
         "files": [_file_meta(f) for f in room.files.values()],
         "files_updated_at": room.files_updated_at,
     }
+
+
+@app.get("/health")
+def health():
+    return jsonify({"status": "ok"}), 200
 
 
 @app.route("/")
@@ -239,4 +245,6 @@ def too_large(_e):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", "8000"))
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true", "yes")
+    app.run(host="0.0.0.0", port=port, debug=debug)
