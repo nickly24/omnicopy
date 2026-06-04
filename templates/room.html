@@ -11,15 +11,27 @@
     <header class="room-header">
       <a href="/" class="back">← На главную</a>
       <h1>Комната <span class="code">{{ room_id }}</span></h1>
-      <p class="lead">Вставьте текст здесь — на другом устройстве он появится автоматически.</p>
+      <p class="lead">Текст и файлы синхронизируются между устройствами. Всё хранится в памяти сервера.</p>
     </header>
 
+    <h2 class="section-title">Текст</h2>
     <textarea id="content" placeholder="Вставьте из буфера (Ctrl+V / Cmd+V)…" spellcheck="false"></textarea>
 
     <div class="toolbar">
-      <button type="button" id="btn-copy" class="btn primary">Скопировать в буфер</button>
+      <button type="button" id="btn-copy" class="btn primary">Скопировать текст</button>
       <span id="status" class="status">Подключение…</span>
     </div>
+
+    <h2 class="section-title">Файлы</h2>
+    <div id="dropzone" class="dropzone" tabindex="0">
+      <p>Перетащите файлы сюда, вставьте (Ctrl+V) или</p>
+      <label class="btn file-label">
+        выберите на диске
+        <input type="file" id="file-input" multiple hidden>
+      </label>
+      <p class="hint">До 25 МБ на файл, до 50 МБ на комнату</p>
+    </div>
+    <ul id="file-list" class="file-list"></ul>
   </main>
   <script>
     window.ROOM_ID = {{ room_id|tojson }};
