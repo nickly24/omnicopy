@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Комната {{ room_id }} — Копирник</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="card wide">
+    <header class="room-header">
+      <a href="/" class="back">← На главную</a>
+      <h1>Комната <span class="code">{{ room_id }}</span></h1>
+      <p class="lead">Вставьте текст здесь — на другом устройстве он появится автоматически.</p>
+    </header>
+
+    <textarea id="content" placeholder="Вставьте из буфера (Ctrl+V / Cmd+V)…" spellcheck="false"></textarea>
+
+    <div class="toolbar">
+      <button type="button" id="btn-copy" class="btn primary">Скопировать в буфер</button>
+      <span id="status" class="status">Подключение…</span>
+    </div>
+  </main>
+  <script>
+    window.ROOM_ID = {{ room_id|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='room.js') }}"></script>
+</body>
+</html>

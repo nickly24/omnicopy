@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Копирник</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="card">
+    <h1>Копирник</h1>
+    <p class="lead">Общий буфер между компьютерами. Данные только в памяти сервера — без базы.</p>
+
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <section class="actions">
+      <button type="button" id="btn-create" class="btn primary">Создать комнату</button>
+      <p class="hint">Получите 4-значный код и откройте его на другом устройстве.</p>
+    </section>
+
+    <section class="join">
+      <label for="room-id">Или войти по коду</label>
+      <div class="row">
+        <input id="room-id" type="text" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
+        <button type="button" id="btn-join" class="btn">Войти</button>
+      </div>
+    </section>
+  </main>
+  <script src="{{ url_for('static', filename='index.js') }}"></script>
+</body>
+</html>
