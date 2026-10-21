@@ -17,13 +17,16 @@ function toast(message) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('visible'), 3200);
 }
 function syncStatus(message, kind = '') {
-  const el = document.getElementById('sync-status');
-  el.className = `sync-status ${kind}`; el.querySelector('span').textContent = message;
+  const el = document.getElementById('connection-dot');
+  el.className = `connection-dot ${kind}`;
+  el.title = kind ? message : 'Подключено к комнате';
+  el.setAttribute('aria-label', el.title);
 }
 async function api(path = '', options = {}) {
   const response = await fetch(apiRoot + path, {...options, signal: AbortSignal.timeout(15000)});
   const data = await response.json();
   if (!response.ok) { const e = new Error(data.error || 'Ошибка сервера'); e.status = response.status; e.data = data; throw e; }
+  window.roomLifetime?.update(data);
   return data;
 }
 function jsonOptions(method, data) { return {method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)}; }
@@ -115,13 +118,12 @@ function highlight(text, type) {
 function updateEditor(state) {
   const text = state.el.querySelector('textarea').value;
   const detected = detect(text);
-  const badge = state.el.querySelector('.type-badge');
-  badge.className = `type-badge ${detected.type} ${detected.invalid ? 'invalid' : ''}`;
-  badge.textContent = detected.label;
+  const badge = state.el.querySelector('.note-extension');
+  badge.className = `note-extension ${detected.type} ${detected.invalid ? 'invalid' : ''}`;
+  badge.textContent = '.' + (detected.type === 'text' ? 'txt' : detected.type);
   badge.title = detected.invalid ? 'Проверьте синтаксис. Текст сохраняется без изменений.' : 'Формат определён автоматически';
   state.el.querySelector('pre').innerHTML = highlight(text, detected.type) + '\n';
-  state.el.querySelector('.char-count').textContent = `${text.length.toLocaleString('ru')} симв.`;
-  state.el.querySelector('.card-type-icon').innerHTML = icon(detected.type === 'text' ? 'file' : 'code');
+  state.el.querySelector('.card-type-icon').innerHTML = window.fileIcons.markup({text:'document', xml:'xml', json:'json', sql:'database'}[detected.type]);
   state.el.querySelector('.copy-button').disabled = !text;
 }
 function cardStatus(state, message, saved = false) {
@@ -138,7 +140,7 @@ function updateLinks() {
   }
   document.getElementById('notes-count').textContent = states.size;
   document.getElementById('files-count').textContent = roomFiles.length;
-  document.getElementById('section-count').textContent = String(selectedView === 'notes' ? states.size : roomFiles.length).padStart(2, '0');
+  window.roomLayout?.refresh();
 }
 function dirty(state) {
   state.dirty = true; state.sequence++;
@@ -176,26 +178,34 @@ async function save(state) {
     if (state.dirty && sequence !== state.sequence && !state.conflict) save(state);
   }
 }
+function fitTitle(state) {
+  const field = state.el.querySelector('.note-title');
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = getComputedStyle(field).font || '550 14px sans-serif';
+  field.style.width = `${Math.max(25, Math.min(640, ctx.measureText(field.value).width + 1))}px`;
+}
 function applyNote(state, note) {
   state.version = note.version; state.serverTitle = note.title;
-  state.el.querySelector('.note-title').value = note.title;
+  const title = note.title === 'Основной буфер' ? 'Buffer' : note.title.replace(/^Новая заметка (\d+)$/, 'Buffer $1');
+  state.el.querySelector('.note-title').value = title;
+  state.serverTitle = title;
+  fitTitle(state);
   state.el.querySelector('textarea').value = note.content;
   updateEditor(state); cardStatus(state, 'Сохранено', true);
 }
 function createCard(note) {
   const el = document.createElement('article'); el.className = 'note-card'; el.dataset.id = note.id;
-  el.innerHTML = `<div class="card-heading"><span class="card-type-icon">${icon('file')}</span><input class="note-title" aria-label="Название карточки" maxlength="80" title="Нажмите, чтобы переименовать"><button class="icon-button delete-note" title="Удалить карточку" aria-label="Удалить карточку">${icon('trash')}</button></div>
-    <div class="card-meta"><span class="type-badge">ТЕКСТ</span><span class="char-count">0 симв.</span></div>
+  el.innerHTML = `<div class="card-heading"><span class="card-type-icon">${window.fileIcons.markup('document')}</span><div class="note-name"><input class="note-title" aria-label="Название карточки" maxlength="80" title="Переименовать"><span class="note-extension text" aria-label="Формат определяется автоматически">.txt</span></div><button class="icon-button delete-note" title="Удалить карточку" aria-label="Удалить карточку">${icon('trash')}</button></div>
     <div class="editor"><pre aria-hidden="true"></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Текст карточки" maxlength="1000000" placeholder="Вставьте текст, XML, JSON или SQL…"></textarea></div>
-    <div class="card-footer"><span class="card-state"></span><button class="button primary copy-button" title="Скопировать текст">${icon('copy')}Скопировать</button></div>
+    <div class="card-footer"><span class="card-state"></span><div class="buffer-actions"><button class="button paste-button" title="Вставить текст из буфера обмена">${icon('paste')}Вставить</button><button class="button primary copy-button" title="Скопировать текст">${icon('copy')}Скопировать</button></div></div>
     <div class="conflict-panel" hidden><p></p><div><button class="button subtle use-remote">Взять с сервера</button><button class="button primary keep-local">Оставить мою версию</button></div></div>
     <div class="attachments"><div class="card-files"></div><button class="drop-hint">${icon('upload')}Добавить файл<span class="sr-only"> для этой карточки</span></button><input class="file-input" type="file" multiple hidden></div>`;
   const state = {id:note.id, version:note.version, el, dirty:false, sequence:0, saving:false, conflict:null};
   states.set(note.id, state);
   const textarea = el.querySelector('textarea');
-  el.querySelector('.note-title').addEventListener('input', () => { dirty(state); updateLinks(); });
+  el.querySelector('.note-title').addEventListener('input', () => { fitTitle(state); dirty(state); updateLinks(); });
   el.querySelector('.note-title').addEventListener('blur', () => {
-    if (!el.querySelector('.note-title').value.trim()) { el.querySelector('.note-title').value = state.serverTitle; dirty(state); updateLinks(); }
+    if (!el.querySelector('.note-title').value.trim()) { el.querySelector('.note-title').value = state.serverTitle; fitTitle(state); dirty(state); updateLinks(); }
   });
   textarea.addEventListener('input', () => { updateEditor(state); dirty(state); });
   textarea.addEventListener('scroll', () => { el.querySelector('pre').scrollTop = textarea.scrollTop; el.querySelector('pre').scrollLeft = textarea.scrollLeft; });
@@ -205,6 +215,20 @@ function createCard(note) {
     }
   });
   el.querySelector('.copy-button').addEventListener('click', e => copy(textarea.value, e.currentTarget));
+  el.querySelector('.paste-button').addEventListener('click', async () => {
+    try {
+      if (!navigator.clipboard?.readText) throw new Error('clipboard unavailable');
+      const text = await navigator.clipboard.readText();
+      if (!text) { toast('В буфере обмена нет текста'); return; }
+      const start = textarea.selectionStart, end = textarea.selectionEnd;
+      if (textarea.value.length - (end - start) + text.length > textarea.maxLength) { toast('Максимум 1 000 000 символов в карточке'); return; }
+      textarea.setRangeText(text, start, end, 'end');
+      updateEditor(state); dirty(state); textarea.focus();
+    } catch {
+      textarea.focus();
+      toast('Нажмите ⌘V или Ctrl+V для вставки — браузер не дал доступ к буферу.');
+    }
+  });
   el.querySelector('.delete-note').hidden = note.id === primaryId;
   el.querySelector('.delete-note').addEventListener('click', () => confirmDelete(state));
   const input = el.querySelector('.file-input');
@@ -237,11 +261,12 @@ function createCard(note) {
   });
   applyNote(state, note);
   grid.insertBefore(el, document.getElementById('add-card'));
+  fitTitle(state);
   return state;
 }
 function fileRow(file) {
   const row = document.createElement('div'); row.className = 'file-row';
-  row.innerHTML = `${icon('file')}<div class="file-info"><span class="file-name"></span><span class="file-size"></span></div><a download title="Скачать файл" aria-label="Скачать файл">${icon('download')}</a><button class="icon-button" title="Удалить файл" aria-label="Удалить файл">${icon('trash')}</button>`;
+  row.innerHTML = `${window.fileIcons.markup(window.fileIcons.kindForFile(file.name, file.mime))}<div class="file-info"><span class="file-name"></span><span class="file-size"></span></div><a download title="Скачать файл" aria-label="Скачать файл">${icon('download')}</a><button class="icon-button" title="Удалить файл" aria-label="Удалить файл">${icon('trash')}</button>`;
   row.querySelector('.file-name').textContent = file.name; row.querySelector('.file-name').title = file.name;
   row.querySelector('.file-size').textContent = formatSize(file.size);
   row.querySelector('a').href = `${apiRoot}/files/${file.id}`;
@@ -282,9 +307,8 @@ function setView(view) {
   selectedView = view;
   document.getElementById('view-notes').classList.toggle('active', view === 'notes');
   document.getElementById('view-files').classList.toggle('active', view === 'files');
-  grid.hidden = view !== 'notes'; document.getElementById('all-files').hidden = view !== 'files';
+  grid.hidden = view !== 'notes'; document.getElementById('notes-stage').hidden = view !== 'notes'; document.getElementById('layout-toggle').hidden = view !== 'notes'; document.getElementById('all-files').hidden = view !== 'files';
   document.getElementById('view-title').textContent = view === 'notes' ? 'Ваше пространство' : 'Файлы комнаты';
-  document.getElementById('section-label').textContent = view === 'notes' ? 'КАРТОЧКИ' : 'ФАЙЛЫ'; updateLinks();
 }
 let adding = false;
 async function addNote() {
@@ -354,7 +378,7 @@ document.getElementById('sidebar-add').addEventListener('click', addNote);
 document.getElementById('view-notes').addEventListener('click', () => setView('notes'));
 document.getElementById('view-files').addEventListener('click', () => setView('files'));
 document.getElementById('copy-code').addEventListener('click', () => copy(roomId));
-document.getElementById('copy-link').addEventListener('click', () => copy(location.href));
+document.getElementById('copy-room-number').addEventListener('click', () => copy(roomId));
 window.addEventListener('beforeunload', e => {
   if ([...states.values()].some(s => s.dirty || s.saving)) { e.preventDefault(); e.returnValue = ''; }
 });

@@ -10,7 +10,7 @@ from flask import Flask, Response, jsonify, render_template, request
 from werkzeug.http import dump_options_header
 
 app = Flask(__name__)
-ROOM_TTL_SEC = 3600
+ROOM_TTL_SEC = 2 * 3600
 MAX_FILE_SIZE = 25 * 1024 * 1024
 MAX_FILES_PER_ROOM = 20
 MAX_ROOM_FILES_BYTES = 50 * 1024 * 1024
@@ -68,9 +68,14 @@ def _file_meta(f):
             "note_id": f.note_id, "uploaded_at": f.uploaded_at}
 
 
+def _lifetime(room):
+    return {"expires_at": room.activity_at + ROOM_TTL_SEC,
+            "server_time": time.time(), "ttl_seconds": ROOM_TTL_SEC}
+
+
 def _room_payload(room_id, room):
     primary = room.notes[0]
-    return {"id": room_id, "content": primary.content, "updated_at": primary.updated_at,
+    return {**_lifetime(room), "id": room_id, "content": primary.content, "updated_at": primary.updated_at,
             "notes": [_note_payload(n) for n in room.notes],
             "files": [_file_meta(f) for f in room.files.values()],
             "files_updated_at": room.files_updated_at}
@@ -165,7 +170,7 @@ def create_note(room_id):
         note = Note(title=f"Новая заметка {len(room.notes) + 1}")
         room.notes.append(note)
         room.activity_at = time.time()
-        return jsonify(_note_payload(note)), 201
+        return jsonify({**_note_payload(note), **_lifetime(room)}), 201
 
 
 @app.patch("/api/rooms/<room_id>/notes/<note_id>")
@@ -192,7 +197,7 @@ def update_note(room_id, note_id):
         if "content" in data:
             note.content = data["content"]
         _touch_note(room, note)
-        return jsonify(_note_payload(note))
+        return jsonify({**_note_payload(note), **_lifetime(room)})
 
 
 @app.delete("/api/rooms/<room_id>/notes/<note_id>")

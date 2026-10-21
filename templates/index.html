@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 {% block bodyclass %}landing{% endblock %}
 {% block content %}
-<header class="landing-nav"><a class="brand" href="/"><img src="/static/logo.svg" alt="" class="brand-art">Копирник<span class="brand-dot">.</span></a><span class="nav-caption">Между устройствами. Без лишнего.</span></header>
+<header class="landing-nav"><a class="brand" href="/"><img src="/static/logo.svg" alt="" class="brand-art">Копирник<span class="brand-dot">.</span></a></header>
 <main class="welcome glass">
   <img class="welcome-logo" src="/static/logo.svg" alt="Копирник">
-  <span class="eyebrow">ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО</span>
   <h1>Скопировали здесь.<br><span class="gradient-text">Продолжили там.</span></h1>
   <p class="welcome-lead">Тексты, код и файлы — в одной комнате.<br>На любом устройстве, в нужный момент.</p>
   <button id="btn-create" class="button primary large"><svg><use href="#i-plus"/></svg>Создать комнату<svg class="trailing"><use href="#i-arrow"/></svg></button>
@@ -15,8 +14,7 @@
     <button id="btn-join" class="button subtle" type="submit">Войти<svg><use href="#i-arrow"/></svg></button>
   </form>
   <p id="entry-error" class="form-error" role="alert"></p>
-  <div class="welcome-footer"><span><i class="status-dot"></i>Без регистрации</span><span><svg><use href="#i-clock"/></svg>Временное хранение</span></div>
 </main>
-<footer class="landing-footer"><span>Меньше пересылок. Больше потока.</span><span>СОЗДАНО ДЛЯ УДОБСТВА</span></footer>
+<footer class="landing-footer">Автор: Николай Прибыш</footer>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='index.js') }}"></script>{% endblock %}

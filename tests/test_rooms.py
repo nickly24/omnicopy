@@ -55,6 +55,18 @@ class RoomsTest(unittest.TestCase):
         self.assertEqual(self.get()['files'], [])
         self.assertEqual(self.client.delete(self.url + '/notes/' + primary['id']).status_code, 400)
 
+    def test_two_hour_countdown_and_activity_reset(self):
+        import time
+        self.assertEqual(ROOM_TTL_SEC, 7200)
+        _rooms[self.rid].activity_at = time.time() - 7100
+        before = self.get()
+        self.assertEqual(before['ttl_seconds'], 7200)
+        self.assertAlmostEqual(before['expires_at'] - before['server_time'], 100, delta=2)
+        self.assertEqual(self.get()['expires_at'], before['expires_at'])
+        note = before['notes'][0]
+        saved = self.client.patch(self.url + '/notes/' + note['id'], json={'version': note['version'], 'content': 'Продлить комнату'})
+        self.assertAlmostEqual(saved.json['expires_at'] - saved.json['server_time'], 7200, delta=2)
+
     def test_validation_and_expiry(self):
         self.assertEqual(self.client.put('/api/rooms/abcd', json={'content': 'x'}).status_code, 400)
         self.assertEqual(self.client.put(self.url, json={'content': 'x', 'updated_at': 'bad'}).status_code, 400)

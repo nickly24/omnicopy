@@ -16,17 +16,16 @@
     </div>
   </aside>
   <section class="workspace-main">
-    <header class="topbar"><div class="room-name"><span class="status-dot"></span>Комната <strong>{{ room_id }}</strong></div><div class="topbar-actions"><button id="copy-link" class="button share-button" title="Скопировать ссылку" aria-label="Пригласить"><svg><use href="#i-link"/></svg></button><a href="/" class="button exit-button"><svg><use href="#i-exit"/></svg>Выйти</a></div></header>
     <div class="workspace-content">
-      <div class="page-heading"><h1 id="view-title">Ваше пространство</h1><button id="add-note" class="button primary"><svg><use href="#i-plus"/></svg>Новая карточка</button></div>
-      <div class="section-toolbar"><div class="section-label"><span id="section-label">КАРТОЧКИ</span><span id="section-count">01</span></div><div id="sync-status" class="sync-status" role="status"><i class="status-dot"></i><span>Подключение…</span></div></div>
+      <div class="page-heading"><div class="workspace-title"><span id="connection-dot" class="connection-dot" role="status" aria-label="Подключение к комнате" title="Подключение к комнате"></span><h1 id="view-title">Ваше пространство</h1><button class="room-code-inline" id="copy-room-number" aria-label="Скопировать номер комнаты" title="Скопировать номер комнаты"><span>{{ room_id }}</span><svg aria-hidden="true"><use href="#i-copy"/></svg></button></div><div class="heading-actions"><div class="room-indicators"><div class="room-lifetime" id="room-lifetime" title="Комната удалится через 2 часа без изменений. Изменение текста или файлов обновляет таймер.">
+        <svg aria-hidden="true"><use href="#i-clock"/></svg><span id="lifetime-label">Осталось</span><time id="lifetime-time">2:00:00</time><div class="lifetime-track" id="lifetime-progress" role="progressbar" aria-label="Оставшееся время комнаты" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div class="lifetime-fill" id="lifetime-fill"></div></div>
+      </div></div><div class="layout-picker"><button id="layout-toggle" class="button layout-toggle" aria-label="Расположение карточек" aria-expanded="false" aria-controls="layout-menu" title="Расположение карточек"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M13 4v16M3 12h10"/></svg></button><div id="layout-menu" class="layout-menu" hidden><span class="layout-menu-label">Расположение</span><div id="layout-options" class="layout-options"></div></div></div><button id="add-note" class="button primary"><svg><use href="#i-plus"/></svg>Новая карточка</button></div></div>
       <div id="room-error" class="room-error" hidden></div>
-      <section id="notes-grid" class="notes-grid" aria-label="Карточки комнаты"></section>
+      <div id="notes-stage" class="notes-stage"><section id="notes-grid" class="notes-grid" aria-label="Карточки комнаты"></section><div id="grid-resizers" class="grid-resizers"></div></div>
       <section id="all-files" class="all-files" hidden aria-label="Все файлы комнаты"></section>
-      <footer class="workspace-footer"><span><svg><use href="#i-clock"/></svg>Комната хранится 1 час без изменений</span></footer>
     </div>
   </section>
 </main>
 <dialog id="confirm-dialog" class="confirm-dialog glass"><h2>Удалить карточку?</h2><p>Текст и прикреплённые файлы будут удалены у всех участников комнаты.</p><div><button id="cancel-delete" class="button subtle">Отмена</button><button id="confirm-delete" class="button primary">Удалить</button></div></dialog>
 {% endblock %}
-{% block scripts %}<script>window.ROOM_ID = {{ room_id|tojson }};</script><script src="{{ url_for('static', filename='room.js') }}"></script>{% endblock %}
+{% block scripts %}<script>window.ROOM_ID = {{ room_id|tojson }};</script><script src="{{ url_for('static', filename='file-icons.js') }}"></script><script src="{{ url_for('static', filename='lifetime.js') }}"></script><script src="{{ url_for('static', filename='layout.js') }}"></script><script src="{{ url_for('static', filename='room.js') }}"></script>{% endblock %}
