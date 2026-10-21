@@ -1,33 +1,22 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Копирник</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <main class="card">
-    <h1>Копирник</h1>
-    <p class="lead">Общий буфер текста и файлов между компьютерами. Только память сервера — без базы.</p>
-
-    {% if error %}
-    <p class="error">{{ error }}</p>
-    {% endif %}
-
-    <section class="actions">
-      <button type="button" id="btn-create" class="btn primary">Создать комнату</button>
-      <p class="hint">Получите 4-значный код и откройте его на другом устройстве.</p>
-    </section>
-
-    <section class="join">
-      <label for="room-id">Или войти по коду</label>
-      <div class="row">
-        <input id="room-id" type="text" inputmode="numeric" maxlength="4" placeholder="0000" autocomplete="off">
-        <button type="button" id="btn-join" class="btn">Войти</button>
-      </div>
-    </section>
-  </main>
-  <script src="{{ url_for('static', filename='index.js') }}"></script>
-</body>
-</html>
+{% extends "base.html" %}
+{% block bodyclass %}landing{% endblock %}
+{% block content %}
+<header class="landing-nav"><a class="brand" href="/"><img src="/static/logo.svg" alt="" class="brand-art">Копирник<span class="brand-dot">.</span></a><span class="nav-caption">Между устройствами. Без лишнего.</span></header>
+<main class="welcome glass">
+  <img class="welcome-logo" src="/static/logo.svg" alt="Копирник">
+  <span class="eyebrow">ВАШЕ ОБЩЕЕ ПРОСТРАНСТВО</span>
+  <h1>Скопировали здесь.<br><span class="gradient-text">Продолжили там.</span></h1>
+  <p class="welcome-lead">Тексты, код и файлы — в одной комнате.<br>На любом устройстве, в нужный момент.</p>
+  <button id="btn-create" class="button primary large"><svg><use href="#i-plus"/></svg>Создать комнату<svg class="trailing"><use href="#i-arrow"/></svg></button>
+  <div class="divider"><span>или войдите в существующую</span></div>
+  <form id="join-form" class="join-form">
+    <label class="sr-only" for="room-id">Четырёхзначный код комнаты</label>
+    <input id="room-id" name="room" type="text" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="Код комнаты" required autocomplete="off">
+    <button id="btn-join" class="button subtle" type="submit">Войти<svg><use href="#i-arrow"/></svg></button>
+  </form>
+  <p id="entry-error" class="form-error" role="alert"></p>
+  <div class="welcome-footer"><span><i class="status-dot"></i>Без регистрации</span><span><svg><use href="#i-clock"/></svg>Временное хранение</span></div>
+</main>
+<footer class="landing-footer"><span>Меньше пересылок. Больше потока.</span><span>СОЗДАНО ДЛЯ УДОБСТВА</span></footer>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='index.js') }}"></script>{% endblock %}

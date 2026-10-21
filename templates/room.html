@@ -1,41 +1,32 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Комната {{ room_id }} — Копирник</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <main class="card wide">
-    <header class="room-header">
-      <a href="/" class="back">← На главную</a>
-      <h1>Комната <span class="code">{{ room_id }}</span></h1>
-      <p class="lead">Текст и файлы синхронизируются между устройствами. Всё хранится в памяти сервера.</p>
-    </header>
-
-    <h2 class="section-title">Текст</h2>
-    <textarea id="content" placeholder="Вставьте из буфера (Ctrl+V / Cmd+V)…" spellcheck="false"></textarea>
-
-    <div class="toolbar">
-      <button type="button" id="btn-copy" class="btn primary">Скопировать текст</button>
-      <span id="status" class="status">Подключение…</span>
+{% extends "base.html" %}
+{% block title %}Комната {{ room_id }} — Копирник{% endblock %}
+{% block bodyclass %}room-page{% endblock %}
+{% block content %}
+<main class="workspace">
+  <aside class="sidebar" id="sidebar" aria-label="Меню комнаты">
+    <button class="brand menu-toggle" id="menu-toggle" aria-label="Развернуть меню" aria-expanded="false"><img src="/static/logo.svg" alt="" class="brand-art"><span class="rail-label">Копирник</span></button>
+    <nav class="room-nav" aria-label="Разделы комнаты">
+      <button class="nav-item active" id="view-notes" aria-label="Все карточки"><span class="art-icon art-cards"><i></i><i></i></span><span class="rail-label">Все карточки</span><span id="notes-count" class="nav-count">1</span></button>
+      <button class="nav-item" id="view-files" aria-label="Файлы"><span class="art-icon art-folder"><i></i><i></i></span><span class="rail-label">Файлы</span><span id="files-count" class="nav-count">0</span></button>
+    </nav>
+    <div class="notes-navigation rail-detail"><div id="note-links"></div><button class="sidebar-add" id="sidebar-add"><svg><use href="#i-plus"/></svg>Новая карточка</button></div>
+    <div class="sidebar-bottom">
+      <button class="nav-item" id="copy-code" aria-label="Скопировать код комнаты"><span class="art-icon art-code"><svg><use href="#i-link"/></svg></span><span class="rail-label">Код · {{ room_id }}</span></button>
+      <a class="nav-item" href="/" aria-label="Выйти из комнаты"><span class="art-icon art-exit"><svg><use href="#i-exit"/></svg></span><span class="rail-label">Выйти из комнаты</span></a>
     </div>
-
-    <h2 class="section-title">Файлы</h2>
-    <div id="dropzone" class="dropzone" tabindex="0">
-      <p>Перетащите файлы сюда, вставьте (Ctrl+V) или</p>
-      <label class="btn file-label">
-        выберите на диске
-        <input type="file" id="file-input" multiple hidden>
-      </label>
-      <p class="hint">До 25 МБ на файл, до 50 МБ на комнату</p>
+  </aside>
+  <section class="workspace-main">
+    <header class="topbar"><div class="room-name"><span class="status-dot"></span>Комната <strong>{{ room_id }}</strong></div><div class="topbar-actions"><button id="copy-link" class="button share-button" title="Скопировать ссылку" aria-label="Пригласить"><svg><use href="#i-link"/></svg></button><a href="/" class="button exit-button"><svg><use href="#i-exit"/></svg>Выйти</a></div></header>
+    <div class="workspace-content">
+      <div class="page-heading"><h1 id="view-title">Ваше пространство</h1><button id="add-note" class="button primary"><svg><use href="#i-plus"/></svg>Новая карточка</button></div>
+      <div class="section-toolbar"><div class="section-label"><span id="section-label">КАРТОЧКИ</span><span id="section-count">01</span></div><div id="sync-status" class="sync-status" role="status"><i class="status-dot"></i><span>Подключение…</span></div></div>
+      <div id="room-error" class="room-error" hidden></div>
+      <section id="notes-grid" class="notes-grid" aria-label="Карточки комнаты"></section>
+      <section id="all-files" class="all-files" hidden aria-label="Все файлы комнаты"></section>
+      <footer class="workspace-footer"><span><svg><use href="#i-clock"/></svg>Комната хранится 1 час без изменений</span></footer>
     </div>
-    <ul id="file-list" class="file-list"></ul>
-  </main>
-  <script>
-    window.ROOM_ID = {{ room_id|tojson }};
-  </script>
-  <script src="{{ url_for('static', filename='room.js') }}"></script>
-</body>
-</html>
+  </section>
+</main>
+<dialog id="confirm-dialog" class="confirm-dialog glass"><h2>Удалить карточку?</h2><p>Текст и прикреплённые файлы будут удалены у всех участников комнаты.</p><div><button id="cancel-delete" class="button subtle">Отмена</button><button id="confirm-delete" class="button primary">Удалить</button></div></dialog>
+{% endblock %}
+{% block scripts %}<script>window.ROOM_ID = {{ room_id|tojson }};</script><script src="{{ url_for('static', filename='room.js') }}"></script>{% endblock %}

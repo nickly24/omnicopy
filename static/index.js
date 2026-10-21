@@ -1,30 +1,23 @@
-const btnCreate = document.getElementById("btn-create");
-const btnJoin = document.getElementById("btn-join");
-const roomInput = document.getElementById("room-id");
-
-btnCreate.addEventListener("click", async () => {
-  btnCreate.disabled = true;
+const create = document.getElementById('btn-create');
+const error = document.getElementById('entry-error');
+const input = document.getElementById('room-id');
+input.addEventListener('input', () => { input.value = input.value.replace(/\D/g, '').slice(0, 4); error.textContent = ''; });
+create.addEventListener('click', async () => {
+  create.disabled = true; error.textContent = '';
   try {
-    const res = await fetch("/api/rooms", { method: "POST" });
+    const res = await fetch('/api/rooms', {method: 'POST'});
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Ошибка");
-    window.location.href = `/r/${data.id}`;
-  } catch (e) {
-    alert(e.message || "Не удалось создать комнату");
-    btnCreate.disabled = false;
-  }
+    if (!res.ok) throw new Error(data.error);
+    await window.roomTransition.enter(`/r/${data.id}`);
+  } catch (e) { error.textContent = e.message || 'Не удалось создать комнату'; create.disabled = false; }
 });
-
-function goJoin() {
-  const id = roomInput.value.replace(/\D/g, "").slice(0, 4);
-  if (id.length !== 4) {
-    alert("Введите 4 цифры");
-    return;
-  }
-  window.location.href = `/r/${id}`;
-}
-
-btnJoin.addEventListener("click", goJoin);
-roomInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") goJoin();
+document.getElementById('join-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const btn = document.getElementById('btn-join'); btn.disabled = true; error.textContent = '';
+  try {
+    const res = await fetch(`/api/rooms/${input.value}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    await window.roomTransition.enter(`/r/${data.id}`);
+  } catch (e) { error.textContent = e.message || 'Не удалось подключиться'; btn.disabled = false; }
 });

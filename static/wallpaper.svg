@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 1200" preserveAspectRatio="xMidYMid slice">
+<defs>
+ <linearGradient id="sky" x1="0" y1="1" x2=".8" y2="0"><stop stop-color="#4000a7"/><stop offset=".5" stop-color="#d448ab"/><stop offset="1" stop-color="#edcedd"/></linearGradient>
+ <linearGradient id="rose" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#9712ba"/><stop offset=".65" stop-color="#e56baf"/><stop offset="1" stop-color="#f6bdcb"/></linearGradient>
+ <linearGradient id="violet" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ba22d0"/><stop offset=".55" stop-color="#6c04d5"/><stop offset="1" stop-color="#24006e"/></linearGradient>
+ <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#6905e0"/><stop offset=".6" stop-color="#3006ab"/><stop offset="1" stop-color="#120238"/></linearGradient>
+ <linearGradient id="pearl" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ead5e5"/><stop offset="1" stop-color="#e7b0ca"/></linearGradient>
+</defs>
+<path fill="url(#sky)" d="M0 0h1800v1200H0z"/>
+<path fill="url(#pearl)" d="M280 0H1450C1250 205 1225 357 1090 475 890 620 763 361 641 236 523 114 400 106 280 0Z"/>
+<path fill="url(#rose)" d="M0 0h305c82 110 200 116 297 234 144 176 211 388 429 444 228 58 330-329 431-494L1560 0h240v1200H0Z"/>
+<path fill="url(#violet)" d="M0 91c101 201 271 210 409 302 177 117 221 336 409 462 265 178 598 112 982 345H0Z"/>
+<path fill="url(#blue)" d="M0 481c168 136 339 105 491 196 163 97 230 279 458 387 206 98 397 57 573 136H0Z"/>
+<path fill="#210476" opacity=".65" d="M0 746c242 148 336 111 531 248 114 81 206 141 353 206H0Z"/>
+<path fill="#13034f" opacity=".65" d="M0 1000c175 67 366 114 551 200H0Z"/>
+</svg>
