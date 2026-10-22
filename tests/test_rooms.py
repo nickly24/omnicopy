@@ -47,13 +47,17 @@ class RoomsTest(unittest.TestCase):
         self.assertEqual(self.get()['notes'][0]['content'], 'desktop')
         self.assertEqual(self.client.delete(self.url + '/files/' + f['id']).status_code, 200)
 
-    def test_delete_note_cascades_files_but_protects_primary(self):
+    def test_delete_note_cascades_files_and_replaces_final_buffer(self):
         primary = self.get()['notes'][0]
         note = self.client.post(self.url + '/notes').json
         self.client.post(self.url + '/files', data={'file': (io.BytesIO(b'x'), 'x.txt'), 'note_id': note['id']})
         self.assertEqual(self.client.delete(self.url + '/notes/' + note['id']).status_code, 200)
         self.assertEqual(self.get()['files'], [])
-        self.assertEqual(self.client.delete(self.url + '/notes/' + primary['id']).status_code, 400)
+        self.assertEqual(self.client.delete(self.url + '/notes/' + primary['id']).status_code, 200)
+        remaining = self.get()['notes']
+        self.assertEqual(len(remaining), 1)
+        self.assertNotEqual(remaining[0]['id'], primary['id'])
+        self.assertEqual(remaining[0]['content'], '')
 
     def test_two_hour_countdown_and_activity_reset(self):
         import time

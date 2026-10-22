@@ -3,7 +3,6 @@ const apiRoot = `/api/rooms/${roomId}`;
 const grid = document.getElementById('notes-grid');
 const states = new Map();
 let roomFiles = [];
-let primaryId;
 let selectedView = 'notes';
 let loaded = false;
 let unavailable = false;
@@ -229,7 +228,7 @@ function createCard(note) {
       toast('Нажмите ⌘V или Ctrl+V для вставки — браузер не дал доступ к буферу.');
     }
   });
-  el.querySelector('.delete-note').hidden = note.id === primaryId;
+
   el.querySelector('.delete-note').addEventListener('click', () => confirmDelete(state));
   const input = el.querySelector('.file-input');
   el.querySelector('.drop-hint').addEventListener('click', () => input.click());
@@ -336,7 +335,6 @@ document.getElementById('confirm-delete').addEventListener('click', async () => 
   } catch (e) { toast(e.message); }
 });
 function applyRoom(data) {
-  primaryId = data.notes[0].id;
   const remoteIds = new Set(data.notes.map(n => n.id));
   for (const [id, state] of states) {
     if (!remoteIds.has(id)) {

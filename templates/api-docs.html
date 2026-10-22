@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}API — Копирник{% endblock %}
+{% block content %}
+<main style="max-width:980px;margin:40px auto;padding:32px;border-radius:20px" class="glass">
+<a class="brand" href="/"><img src="/static/logo.svg" class="brand-art" alt="">Копирник API</a>
+<h1>Комнаты, буферы и файлы</h1>
+<p>Публичное API без ключей и регистрации. Базовый путь: <code>/api/v1</code>.</p>
+<p><a class="button primary" href="/api/openapi.json">OpenAPI 3.1 · JSON</a></p>
+<p>Код комнаты — строка из четырёх цифр, например <code>"0042"</code>. Все операции выполняются в указанной комнате.</p>
+<table style="width:100%;text-align:left;border-spacing:0 12px;font-size:13px"><thead><tr><th>Метод</th><th>Путь после /api/v1</th><th>Действие</th></tr></thead><tbody>
+<tr><td>POST</td><td>/rooms</td><td>Создать комнату</td></tr>
+<tr><td>GET / DELETE</td><td>/rooms/{room_id}</td><td>Прочитать / удалить комнату</td></tr>
+<tr><td>GET / POST</td><td>/rooms/{room_id}/buffers</td><td>Список / создание буфера</td></tr>
+<tr><td>GET / PATCH / DELETE</td><td>/rooms/{room_id}/buffers/{note_id}</td><td>Прочитать / изменить / удалить буфер</td></tr>
+<tr><td>GET / POST</td><td>/rooms/{room_id}/files</td><td>Список / загрузка файла</td></tr>
+<tr><td>GET / POST</td><td>/rooms/{room_id}/buffers/{note_id}/files</td><td>Файлы конкретного буфера</td></tr>
+<tr><td>GET / DELETE</td><td>/rooms/{room_id}/files/{file_id}</td><td>Скачать / удалить файл</td></tr>
+</tbody></table>
+<h2>Создать комнату с текстом</h2>
+<pre style="white-space:pre-wrap;overflow-wrap:anywhere;background:#190c304d;padding:20px;border-radius:12px">POST /api/v1/rooms
+Content-Type: application/json
+
+{"title": "Заметки", "content": "Текст из чата"}</pre>
+<p>Ответ <code>201</code> содержит <code>id</code> комнаты, <code>buffers</code>, <code>files</code> и <code>expires_at</code>. В браузере комната доступна по <code>/r/{id}</code>.</p>
+<h2>Создать или изменить буфер</h2>
+<pre style="white-space:pre-wrap;background:#190c304d;padding:20px;border-radius:12px">POST /api/v1/rooms/0042/buffers
+Content-Type: application/json
+
+{"title": "Запрос", "content": "SELECT 1;"}
+
+PATCH /api/v1/rooms/0042/buffers/BUFFER_ID
+Content-Type: application/json
+
+{"content": "SELECT 2;"}</pre>
+<p>Для простого обновления передавайте название и/или текст. Можно добавить <code>version</code> из ответа: если другой участник уже изменил буфер, сервер вернёт <code>409</code> с актуальным буфером в поле <code>note</code>.</p>
+<h2>Загрузить файл</h2>
+<pre style="white-space:pre-wrap;background:#190c304d;padding:20px;border-radius:12px">POST /api/v1/rooms/0042/buffers/BUFFER_ID/files
+Content-Type: multipart/form-data
+
+file: содержимое файла</pre>
+<p>В ответе поле <code>file</code> содержит <code>id</code>, <code>buffer_id</code>, исходное имя и <code>download_url</code>. По этой ссылке GET возвращает файл, DELETE удаляет его.</p>
+<h2>Срок жизни и ограничения</h2>
+<p>Два часа без изменений. Запись текста, операции с файлами и скачивание продлевают срок; чтение комнаты и списков — нет. Данные хранятся в памяти и удаляются при перезапуске сервера. При удалении последнего буфера появляется новый пустой.</p>
+<p>До 30 буферов, 20 файлов, 25 МиБ на файл, 50 МиБ на комнату, 1 000 000 символов в буфере.</p>
+<p>Ошибки возвращаются в JSON: <code>{"error": "Описание"}</code>. Коды: 400 — неверные данные или лимит количества, 404 — ресурс отсутствует, 409 — конфликт версии, 413 — превышен размер, 415 — неверный Content-Type, 503 — закончились коды комнат.</p>
+</main>
+{% endblock %}
