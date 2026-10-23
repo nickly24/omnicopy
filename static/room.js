@@ -59,6 +59,8 @@ function detect(text) {
   if (/^(?:SELECT\b|WITH\s+(?:RECURSIVE\s+)?[\w"`\[]+|INSERT\s+INTO\b|UPDATE\s+[\w"`\[]+\s+SET\b|DELETE\s+FROM\b|(?:CREATE|ALTER|DROP|TRUNCATE)\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?(?:TABLE|VIEW|INDEX|DATABASE|SCHEMA|FUNCTION|PROCEDURE|TRIGGER)\b|EXPLAIN\b|MERGE\s+INTO\b|BEGIN\s*;|COMMIT\s*;|ROLLBACK\s*;)/i.test(statement)) {
     return {type:'sql', label:'SQL'};
   }
+  const table = window.bufferTables.parse(text);
+  if (table) return {type:'table', label:'TABLE', table};
   return {type:'text', label:'ТЕКСТ'};
 }
 function highlight(text, type) {
@@ -121,7 +123,23 @@ function updateEditor(state) {
   badge.textContent = '.' + (detected.type === 'text' ? 'txt' : detected.type);
   badge.title = detected.invalid ? 'Проверьте синтаксис. Текст сохраняется без изменений.' : 'Формат определён автоматически';
   state.el.querySelector('pre').innerHTML = highlight(text, detected.type) + '\n';
-  state.el.querySelector('.card-type-icon').innerHTML = window.fileIcons.markup({text:'document', xml:'xml', json:'json', sql:'database'}[detected.type]);
+  state.el.querySelector('.card-type-icon').innerHTML = window.fileIcons.markup({text:'document', xml:'xml', json:'json', sql:'database', table:'table'}[detected.type]);
+  const toggle = state.el.querySelector('.table-toggle');
+  const preview = state.el.querySelector('.table-preview');
+  toggle.hidden = detected.type !== 'table';
+  const showTable = detected.type === 'table' && !state.tableSource;
+  toggle.textContent = showTable ? 'Исходник' : 'Таблица';
+  toggle.setAttribute('aria-label', showTable ? 'Редактировать исходный текст таблицы' : 'Показать таблицу');
+  toggle.setAttribute('aria-pressed', String(showTable));
+  state.el.classList.toggle('show-table', showTable);
+  state.el.querySelector('.editor').hidden = showTable;
+  preview.hidden = !showTable;
+  if (showTable && state.tableText !== text) {
+    state.tableText = text;
+    const {rows, columns} = detected.table;
+    const visible = rows.slice(0, Math.min(500, Math.floor(10000 / columns)));
+    preview.innerHTML = `<table class="data-table" aria-label="Данные буфера"><thead><tr><th class="row-number" scope="col">#</th>${Array.from({length:columns}, (_, i) => `<th scope="col">${window.bufferTables.columnName(i)}</th>`).join('')}</tr></thead><tbody>${visible.map((row, i) => `<tr><th class="row-number" scope="row">${i + 1}</th>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>${visible.length < rows.length ? `<div class="table-limit">Показано ${visible.length} из ${rows.length} строк. Копируется весь текст.</div>` : ''}`;
+  }
   state.el.querySelector('.copy-button').disabled = !text;
 }
 function cardStatus(state, message, saved = false) {
@@ -194,8 +212,8 @@ function applyNote(state, note) {
 function createCard(note) {
   const el = document.createElement('article'); el.className = 'note-card'; el.dataset.id = note.id;
   el.innerHTML = `<div class="card-heading"><span class="card-type-icon">${window.fileIcons.markup('document')}</span><div class="note-name"><input class="note-title" aria-label="Название карточки" maxlength="80" title="Переименовать"><span class="note-extension text" aria-label="Формат определяется автоматически">.txt</span></div><button class="icon-button delete-note" title="Удалить карточку" aria-label="Удалить карточку">${icon('trash')}</button></div>
-    <div class="editor"><pre aria-hidden="true"></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Текст карточки" maxlength="1000000" placeholder="Вставьте текст, XML, JSON или SQL…"></textarea></div>
-    <div class="card-footer"><span class="card-state"></span><div class="buffer-actions"><button class="button paste-button" title="Вставить текст из буфера обмена">${icon('paste')}Вставить</button><button class="button primary copy-button" title="Скопировать текст">${icon('copy')}Скопировать</button></div></div>
+    <div class="editor"><pre aria-hidden="true"></pre><textarea spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Текст карточки" maxlength="1000000" placeholder="Вставьте текст, таблицу, XML, JSON или SQL…"></textarea></div><div class="table-preview" tabindex="0" role="region" aria-label="Таблица с прокруткой" hidden></div>
+    <div class="card-footer"><span class="card-state"></span><div class="buffer-actions"><button class="button table-toggle" hidden>Исходник</button><button class="button paste-button" title="Вставить текст из буфера обмена">${icon('paste')}Вставить</button><button class="button primary copy-button" title="Скопировать текст">${icon('copy')}Скопировать</button></div></div>
     <div class="conflict-panel" hidden><p></p><div><button class="button subtle use-remote">Взять с сервера</button><button class="button primary keep-local">Оставить мою версию</button></div></div>
     <div class="attachments"><div class="card-files"></div><button class="drop-hint">${icon('upload')}Добавить файл<span class="sr-only"> для этой карточки</span></button><input class="file-input" type="file" multiple hidden></div>`;
   const state = {id:note.id, version:note.version, el, dirty:false, sequence:0, saving:false, conflict:null};
@@ -205,7 +223,11 @@ function createCard(note) {
   el.querySelector('.note-title').addEventListener('blur', () => {
     if (!el.querySelector('.note-title').value.trim()) { el.querySelector('.note-title').value = state.serverTitle; fitTitle(state); dirty(state); updateLinks(); }
   });
-  textarea.addEventListener('input', () => { updateEditor(state); dirty(state); });
+  textarea.addEventListener('input', e => { state.tableSource = e.inputType !== 'insertFromPaste'; updateEditor(state); dirty(state); });
+  el.querySelector('.table-toggle').addEventListener('click', () => {
+    state.tableSource = !state.tableSource; updateEditor(state);
+    if (state.tableSource) textarea.focus();
+  });
   textarea.addEventListener('scroll', () => { el.querySelector('pre').scrollTop = textarea.scrollTop; el.querySelector('pre').scrollLeft = textarea.scrollLeft; });
   textarea.addEventListener('keydown', e => {
     if (e.key === 'Tab' && !e.shiftKey) {
@@ -221,7 +243,8 @@ function createCard(note) {
       const start = textarea.selectionStart, end = textarea.selectionEnd;
       if (textarea.value.length - (end - start) + text.length > textarea.maxLength) { toast('Максимум 1 000 000 символов в карточке'); return; }
       textarea.setRangeText(text, start, end, 'end');
-      updateEditor(state); dirty(state); textarea.focus();
+      state.tableSource = false; updateEditor(state); dirty(state);
+      if (!el.classList.contains('show-table')) textarea.focus();
     } catch {
       textarea.focus();
       toast('Нажмите ⌘V или Ctrl+V для вставки — браузер не дал доступ к буферу.');

@@ -26,4 +26,4 @@
 </main>
 <dialog id="confirm-dialog" class="confirm-dialog glass"><h2>Удалить карточку?</h2><p>Текст и прикреплённые файлы будут удалены у всех участников комнаты.</p><div><button id="cancel-delete" class="button subtle">Отмена</button><button id="confirm-delete" class="button primary">Удалить</button></div></dialog>
 {% endblock %}
-{% block scripts %}<script>window.ROOM_ID = {{ room_id|tojson }};</script><script src="{{ url_for('static', filename='file-icons.js') }}"></script><script src="{{ url_for('static', filename='layout.js') }}"></script><script src="{{ url_for('static', filename='room.js') }}"></script>{% endblock %}
+{% block scripts %}<script>window.ROOM_ID = {{ room_id|tojson }};</script><script src="{{ url_for('static', filename='file-icons.js') }}"></script><script src="{{ url_for('static', filename='layout.js') }}"></script><script src="{{ url_for('static', filename='buffer-tables.js') }}"></script><script src="{{ url_for('static', filename='room.js') }}"></script>{% endblock %}
