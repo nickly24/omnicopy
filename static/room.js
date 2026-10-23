@@ -25,7 +25,6 @@ async function api(path = '', options = {}) {
   const response = await fetch(apiRoot + path, {...options, signal: AbortSignal.timeout(15000)});
   const data = await response.json();
   if (!response.ok) { const e = new Error(data.error || 'Ошибка сервера'); e.status = response.status; e.data = data; throw e; }
-  window.roomLifetime?.update(data);
   return data;
 }
 function jsonOptions(method, data) { return {method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)}; }
@@ -366,7 +365,7 @@ async function poll() {
     if (e.status === 404) {
       unavailable = true;
       const el = document.getElementById('room-error'); el.hidden = false;
-      el.textContent = 'Комната не найдена или срок её жизни истёк. Текст на экране можно скопировать. Создайте новую комнату на главной странице.';
+      el.textContent = 'Комната не найдена или была удалена. Текст на экране можно скопировать. Создайте новую комнату на главной странице.';
       syncStatus('Комната недоступна', 'error');
     } else syncStatus('Нет связи · повторяем подключение', 'warn');
   } finally { setTimeout(poll, 1200); }

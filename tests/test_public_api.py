@@ -94,20 +94,21 @@ class PluginAPITest(unittest.TestCase):
             self.assertIn(response.status_code, [404, 405])
             self.assertIn('error', response.json)
 
-    def test_room_upload_expiry_and_headers(self):
+    def test_permanent_room_upload_and_headers(self):
         _rooms[self.room['id']].activity_at = time.time() - 100
         expiry = self.client.get(self.root).json['expires_at']
         self.assertEqual(self.client.get(self.root + '/files').json['expires_at'], expiry)
         note = self.room['buffers'][0]
         upload = self.client.post(self.root + '/files', data={'file': (io.BytesIO(b'x'), 'x.txt'), 'buffer_id': note['id']})
-        self.assertGreater(upload.json['expires_at'], expiry)
+        self.assertEqual(upload.json['expires_at'], 0)
+        self.assertEqual(expiry, 0)
         response = self.client.get(self.root)
         self.assertEqual(response.headers['Access-Control-Allow-Origin'], '*')
         self.assertEqual(response.headers['Cache-Control'], 'no-store')
         options = self.client.options(self.root + '/buffers/' + note['id'])
         self.assertIn('PATCH', options.headers['Access-Control-Allow-Methods'])
         _rooms[self.room['id']].activity_at = time.time() - 7201
-        self.assertEqual(self.client.get(self.root).status_code, 404)
+        self.assertEqual(self.client.get(self.root).status_code, 200)
 
     def test_card_and_file_limits(self):
         for _ in range(29):

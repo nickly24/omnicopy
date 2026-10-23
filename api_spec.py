@@ -7,8 +7,8 @@ def ref(name):
 
 def build_spec(base_url):
     string = {"type": "string"}
-    lifetime = {"expires_at": {"type": "number", "description": "Unix seconds until automatic room deletion"},
-                "server_time": {"type": "number"}, "ttl_seconds": {"type": "integer", "example": 7200}}
+    lifetime = {"expires_at": {"type": "number", "description": "Compatibility field: 0 means the room never expires"},
+                "server_time": {"type": "number"}, "ttl_seconds": {"type": "integer", "example": 0}}
     edit = {"title": {"type": "string", "minLength": 1, "maxLength": 80},
             "content": {"type": "string", "maxLength": 1000000}}
     note = {"id": string, **edit, "version": {"type": "integer", "minimum": 1}, "updated_at": {"type": "number"}}
@@ -81,7 +81,7 @@ def build_spec(base_url):
     operation(file, "delete", "deleteFile", "Delete a file from a room", "Room")
     return {
         "openapi": "3.1.0", "info": {"title": "Копирник API", "version": "1.0.0", "description":
-            "Public API without authentication. Room codes are strings of four digits, preserving leading zeros. Rooms and files live in server memory and disappear on restart or after 2 hours without activity. Reads do not extend room lifetime; writes and downloads do. Limits: 30 buffers, 20 files, 25 MiB/file, 50 MiB/room, 1,000,000 characters/buffer."},
+            "Public API without authentication. Room codes are strings of four digits, preserving leading zeros. Rooms do not expire. Rooms and files live only in server memory and disappear on restart. Opening /r/{room_id} in a browser creates an empty room with that code if it is missing. The compatibility fields expires_at and ttl_seconds are numeric zeros. Limits: 30 buffers, 20 files, 25 MiB/file, 50 MiB/room, 1,000,000 characters/buffer."},
         "servers": [{"url": base_url + "/api/v1"}], "security": [], "paths": paths,
         "components": {"schemas": schemas},
     }

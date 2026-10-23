@@ -13,7 +13,7 @@ from werkzeug.exceptions import BadRequest, HTTPException, UnsupportedMediaType
 from api_spec import build_spec
 
 app = Flask(__name__)
-ROOM_TTL_SEC = 2 * 3600
+ROOM_TTL_SEC = 0  # Kept for compatibility; zero means no expiration.
 MAX_FILE_SIZE = 25 * 1024 * 1024
 MAX_FILES_PER_ROOM = 20
 MAX_ROOM_FILES_BYTES = 50 * 1024 * 1024
@@ -55,12 +55,6 @@ _rooms: dict[str, Room] = {}
 _lock = threading.Lock()
 
 
-def _cleanup_expired():
-    now = time.time()
-    for rid in [rid for rid, room in _rooms.items() if now - room.activity_at > ROOM_TTL_SEC]:
-        del _rooms[rid]
-
-
 def _note_payload(note):
     return {"id": note.id, "title": note.title, "content": note.content,
             "version": note.version, "updated_at": note.updated_at}
@@ -73,7 +67,7 @@ def _file_meta(f):
 
 
 def _lifetime(room):
-    return {"expires_at": room.activity_at + ROOM_TTL_SEC,
+    return {"expires_at": 0,  # Numeric compatibility fields: zero means unlimited.
             "server_time": time.time(), "ttl_seconds": ROOM_TTL_SEC}
 
 
@@ -156,6 +150,9 @@ def index():
 
 @app.get("/r/<room_id>")
 def room_page(room_id):
+    with _lock:
+        if room_id not in _rooms:
+            _rooms[room_id] = Room()
     return render_template("room.html", room_id=room_id)
 
 
@@ -167,7 +164,6 @@ def create_room():
     if error:
         return jsonify(error=error), 400
     with _lock:
-        _cleanup_expired()
         available = list(set(range(10000)) - {int(rid) for rid in _rooms})
         if not available:
             return jsonify(error="Все комнаты заняты. Попробуйте позже"), 503
@@ -180,10 +176,9 @@ def create_room():
 @app.get("/api/rooms/<room_id>")
 def get_room(room_id):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
-            return jsonify(error="Комната не найдена или срок её жизни истёк"), 404
+            return jsonify(error="Комната не найдена"), 404
         return jsonify(_room_payload(room_id, room))
 
 
@@ -197,7 +192,6 @@ def update_room(room_id):
     if revision is not None and (type(revision) not in (int, float) or not math.isfinite(revision)):
         return jsonify(error="Некорректная версия текста"), 400
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
             return jsonify(error="Комната не найдена"), 404
@@ -217,7 +211,6 @@ def create_note(room_id):
     if error:
         return jsonify(error=error), 400
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
             return jsonify(error="Комната не найдена"), 404
@@ -239,7 +232,6 @@ def update_note(room_id, note_id):
     if not any(key in data for key in ("title", "content")):
         return jsonify(error="Укажите название или текст"), 400
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         note = next((n for n in room.notes if n.id == note_id), None) if room else None
         if note is None:
@@ -258,7 +250,6 @@ def update_note(room_id, note_id):
 @app.delete("/api/rooms/<room_id>/notes/<note_id>")
 def delete_note(room_id, note_id):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None or not any(n.id == note_id for n in room.notes):
             return jsonify(error="Карточка не найдена"), 404
@@ -286,7 +277,6 @@ def upload_file(room_id, note_id=None):
     name = upload.filename.replace("\\", "/").rsplit("/", 1)[-1]
     name = "".join(c for c in name if ord(c) >= 32 and ord(c) != 127)[:240] or "file"
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
             return jsonify(error="Комната не найдена"), 404
@@ -310,7 +300,6 @@ def upload_file(room_id, note_id=None):
 def download_file(room_id, file_id):
     from urllib.parse import quote
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         f = room.files.get(file_id) if room else None
         if f is None:
@@ -326,7 +315,6 @@ def download_file(room_id, file_id):
 @app.delete("/api/rooms/<room_id>/files/<file_id>")
 def delete_file(room_id, file_id):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None or file_id not in room.files:
             return jsonify(error="Файл не найден"), 404
@@ -338,7 +326,6 @@ def delete_file(room_id, file_id):
 @app.delete("/api/v1/rooms/<room_id>")
 def delete_room(room_id):
     with _lock:
-        _cleanup_expired()
         if room_id not in _rooms:
             return jsonify(error="Комната не найдена"), 404
         del _rooms[room_id]
@@ -348,7 +335,6 @@ def delete_room(room_id):
 @app.get("/api/v1/rooms/<room_id>/buffers")
 def list_buffers(room_id):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
             return jsonify(error="Комната не найдена"), 404
@@ -358,7 +344,6 @@ def list_buffers(room_id):
 @app.get("/api/v1/rooms/<room_id>/buffers/<note_id>")
 def get_buffer(room_id, note_id):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         note = next((n for n in room.notes if n.id == note_id), None) if room else None
         if note is None:
@@ -370,7 +355,6 @@ def get_buffer(room_id, note_id):
 @app.get("/api/v1/rooms/<room_id>/buffers/<note_id>/files")
 def list_files(room_id, note_id=None):
     with _lock:
-        _cleanup_expired()
         room = _rooms.get(room_id)
         if room is None:
             return jsonify(error="Комната не найдена"), 404
